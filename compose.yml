@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    environment:
+      - DB_HOST=http://pocketbase-service:8090
+    depends_on:
+      - pocketbase-service
+    networks:
+      - app-network
+
+  nginx-service:
+    build:
+      context: ./nginx-service
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - auth-service
+      - upload-service
+    networks:
+      - app-network
+
+  pocketbase-service:
+    build:
+      context: ./pocketbase-service
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    volumes:
+      - pocketbase_data:/app/pb_data
+    networks:
+      - app-network
+
+  upload-service:
+    build:
+      context: ./upload-service
+      dockerfile: Dockerfile
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:1337
+    depends_on:
+      - auth-service
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  pocketbase_data:
